@@ -474,7 +474,7 @@ $\rho_k$ the autocorrelation at lag $k$,
 
 $$
 
-\\mathrm{SSE}{Var}(\bar x) = \frac{\sigma^2}{n}\left(1 + 2\sum_{k=1}^{\infty} \rho_k\right)
+\operatorname{Var}(\bar x) = \frac{\sigma^2}{n}\left(1 + 2\sum_{k=1}^{\infty} \rho_k\right)
 
 = \frac{\sigma^2}{n}\, \tau ,
 
