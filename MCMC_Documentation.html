@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Markov Chain Monte Carlo From Scratch</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <!-- Markdown-it -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@13/dist/markdown-it.min.js"></script>
+    <!-- KaTeX JS -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it-math@3.0.2/dist/markdown-it-math.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -12,58 +19,50 @@
             box-sizing: border-box;
         }
 
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --background-color: #ecf0f1;
-            --text-color: #2c3e50;
-            --border-color: #bdc3c7;
-        }
-
         html {
             scroll-behavior: smooth;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.7;
-            color: var(--text-color);
-            background-color: #ffffff;
-            max-width: 1200px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1100px;
             margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
         }
 
         header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 60px 40px;
             text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         header h1 {
-            font-size: 2.5em;
+            font-size: 2.8em;
             margin-bottom: 20px;
             font-weight: 700;
         }
 
-        .header-content p {
-            font-size: 1.1em;
-            line-height: 1.8;
-            margin-bottom: 15px;
-            max-width: 900px;
-            margin-left: auto;
-            margin-right: auto;
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.95;
+            line-height: 1.6;
         }
 
         nav {
-            background-color: var(--primary-color);
-            padding: 0;
+            background-color: #2c3e50;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         nav ul {
@@ -71,9 +70,9 @@
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 100%;
             padding: 0;
+            margin: 0;
         }
 
         nav li {
@@ -84,49 +83,43 @@
             display: block;
             color: white;
             text-decoration: none;
-            padding: 15px 20px;
-            transition: background-color 0.3s;
-            font-size: 0.95em;
+            padding: 12px 18px;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
         }
 
         nav a:hover {
-            background-color: var(--secondary-color);
+            background-color: #667eea;
+            border-bottom-color: #f39c12;
         }
 
         main {
-            padding: 40px;
-            background-color: white;
+            padding: 50px 40px;
         }
 
         section {
-            margin-bottom: 60px;
-            padding-bottom: 40px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        section:last-child {
-            border-bottom: none;
+            margin-bottom: 50px;
         }
 
         h2 {
             font-size: 2em;
-            color: var(--primary-color);
-            margin-bottom: 25px;
+            color: #667eea;
+            margin-bottom: 30px;
             margin-top: 40px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid var(--secondary-color);
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
         }
 
         h3 {
             font-size: 1.5em;
-            color: var(--primary-color);
+            color: #2c3e50;
             margin-top: 30px;
             margin-bottom: 15px;
         }
 
         h4 {
             font-size: 1.2em;
-            color: var(--secondary-color);
+            color: #667eea;
             margin-top: 20px;
             margin-bottom: 10px;
         }
@@ -136,32 +129,31 @@
             text-align: justify;
         }
 
-        .equation-block {
-            background-color: var(--background-color);
-            padding: 20px;
-            margin: 20px 0;
-            border-left: 4px solid var(--secondary-color);
+        .math-block {
+            background-color: #f8f9fa;
+            padding: 25px;
+            margin: 25px 0;
+            border-left: 5px solid #667eea;
             border-radius: 4px;
             overflow-x: auto;
         }
 
-        .equation-block mjx-container {
-            text-align: center;
-        }
-
-        .inline-math {
+        .math-inline {
+            background-color: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
             font-style: italic;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 25px 0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 30px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         table thead {
-            background-color: var(--secondary-color);
+            background-color: #667eea;
             color: white;
         }
 
@@ -173,45 +165,46 @@
 
         table td {
             padding: 12px 15px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid #e0e0e0;
         }
 
         table tbody tr:hover {
-            background-color: #f9f9f9;
-        }
-
-        table tbody tr:nth-child(even) {
             background-color: #f5f5f5;
         }
 
-        .figure-reference {
+        table tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        .figure-box {
             text-align: center;
             margin: 30px 0;
             padding: 20px;
-            background-color: var(--background-color);
+            background-color: #f8f9fa;
             border-radius: 4px;
         }
 
-        .figure-reference img {
+        .figure-box img {
             max-width: 100%;
             height: auto;
             border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .figure-caption {
             font-style: italic;
             color: #666;
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 0.95em;
         }
 
         code {
             background-color: #f4f4f4;
-            padding: 2px 6px;
+            padding: 3px 8px;
             border-radius: 3px;
-            font-family: 'Monaco', 'Courier New', monospace;
+            font-family: 'Courier New', monospace;
             font-size: 0.9em;
+            color: #d63384;
         }
 
         pre {
@@ -232,20 +225,21 @@
         }
 
         .toc {
-            background-color: var(--background-color);
-            padding: 25px;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 30px;
+            border-radius: 8px;
             margin: 30px 0;
-            border-left: 4px solid var(--secondary-color);
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
         .toc h3 {
             margin-top: 0;
-            color: var(--primary-color);
+            color: #667eea;
         }
 
         .toc ol {
-            margin-left: 20px;
+            margin-left: 25px;
         }
 
         .toc li {
@@ -253,47 +247,90 @@
         }
 
         .toc a {
-            color: var(--secondary-color);
+            color: #667eea;
             text-decoration: none;
-            transition: color 0.3s;
+            transition: all 0.3s;
         }
 
         .toc a:hover {
-            color: var(--accent-color);
+            color: #764ba2;
             text-decoration: underline;
         }
 
-        .highlight {
-            background-color: #fff3cd;
-            padding: 2px 4px;
-            border-radius: 2px;
-        }
-
-        .theorem {
+        .theorem-box {
             background-color: #e8f4f8;
             padding: 20px;
-            border-left: 4px solid var(--secondary-color);
+            border-left: 5px solid #667eea;
             margin: 20px 0;
             border-radius: 4px;
         }
 
-        .theorem strong {
-            color: var(--secondary-color);
+        .theorem-box strong {
+            color: #667eea;
+        }
+
+        .question-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .answer-box {
+            background-color: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        footer {
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: #667eea;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 50%;
+            text-decoration: none;
+            display: none;
+            z-index: 99;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s;
+        }
+
+        .back-to-top:hover {
+            background-color: #764ba2;
+            transform: translateY(-3px);
+        }
+
+        .back-to-top.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+        }
+
+        .katex {
+            font-size: 1.1em;
         }
 
         blockquote {
-            border-left: 4px solid var(--secondary-color);
+            border-left: 5px solid #667eea;
             padding-left: 20px;
             margin: 20px 0;
             color: #555;
             font-style: italic;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 20px 0;
         }
 
         @media (max-width: 768px) {
@@ -302,19 +339,19 @@
             }
 
             header h1 {
-                font-size: 1.8em;
+                font-size: 2em;
             }
 
             main {
-                padding: 20px;
+                padding: 30px 20px;
             }
 
             nav ul {
                 flex-direction: column;
             }
 
-            .grid-2 {
-                grid-template-columns: 1fr;
+            nav a {
+                text-align: center;
             }
 
             h2 {
@@ -325,519 +362,461 @@
                 font-size: 1.2em;
             }
         }
-
-        footer {
-            background-color: var(--primary-color);
-            color: white;
-            text-align: center;
-            padding: 20px;
-            margin-top: 40px;
-        }
-
-        .back-to-top {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 4px;
-            text-decoration: none;
-            display: none;
-            z-index: 99;
-        }
-
-        .back-to-top.show {
-            display: block;
-        }
-
-        .question-block {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
-
-        .answer-block {
-            background-color: #d4edda;
-            border-left: 4px solid #28a745;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
-    <header>
-        <h1>🎯 Markov Chain Monte Carlo From Scratch</h1>
-        <div class="header-content">
-            <p><strong>Understanding how to sample from complex distributions without computing integrals.</strong></p>
-        </div>
-    </header>
+    <div class="container">
+        <header>
+            <h1>🎯 Markov Chain Monte Carlo From Scratch</h1>
+            <p class="subtitle">Understanding how to sample from complex distributions without computing integrals</p>
+        </header>
 
-    <nav>
-        <ul>
-            <li><a href="#sec1">The Idea</a></li>
-            <li><a href="#sec2">Examples</a></li>
-            <li><a href="#sec3">Theory</a></li>
-            <li><a href="#sec4">Verification</a></li>
-            <li><a href="#sec5">Results</a></li>
-            <li><a href="#sec6">Lessons</a></li>
-            <li><a href="#sec7">How to Run</a></li>
-            <li><a href="#sec8">Code Map</a></li>
-        </ul>
-    </nav>
+        <nav>
+            <ul>
+                <li><a href="#sec1">The Idea</a></li>
+                <li><a href="#sec2">Examples</a></li>
+                <li><a href="#sec3">Theory</a></li>
+                <li><a href="#sec4">Verification</a></li>
+                <li><a href="#sec5">Results</a></li>
+                <li><a href="#sec6">Lessons</a></li>
+                <li><a href="#sec7">How to Run</a></li>
+                <li><a href="#sec8">Code Map</a></li>
+            </ul>
+        </nav>
 
-    <main>
-        <!-- Question and Answer Block -->
-        <section>
-            <div class="question-block">
-                <h3>❓ Question</h3>
-                <p>Bayes' theorem gives the posterior as likelihood times prior, divided by an integral that is usually impossible to compute. How can I draw samples from a distribution I can only evaluate up to a constant, and how do I know the samples are right?</p>
-            </div>
-
-            <div class="answer-block">
-                <h3>✅ Answer</h3>
-                <p>Build a random walk whose long-run distribution <em>is</em> the posterior. The Metropolis–Hastings rule does this with one line of algebra, and the reason it works (detailed balance) is a four-line proof. A 40-line sampler recovers a closed-form posterior to within its Monte Carlo error, and fitting Hubble's 1929 data gives the Hubble constant as <span class="inline-math">453 ± 80</span> km/s per Mpc, an uncertainty that ordinary least squares alone does not show.</p>
-            </div>
-        </section>
-
-        <!-- Table of Contents -->
-        <section>
-            <div class="toc">
-                <h3>📋 Contents</h3>
-                <ol>
-                    <li><a href="#sec1">The idea in one paragraph</a></li>
-                    <li><a href="#sec2">Two worked examples you can do by hand</a></li>
-                    <li><a href="#sec3">The derivations</a></li>
-                    <li><a href="#sec4">Verification</a></li>
-                    <li><a href="#sec5">Results</a></li>
-                    <li><a href="#sec6">Numerical lessons learned</a></li>
-                    <li><a href="#sec7">How to run</a></li>
-                    <li><a href="#sec8">Code map</a></li>
-                </ol>
-            </div>
-        </section>
-
-        <!-- Section 1 -->
-        <section id="sec1">
-            <h2>1. The Idea in One Paragraph</h2>
-
-            <p>A posterior distribution <span class="inline-math">p(θ | D)</span> is proportional to <span class="inline-math">p(D | θ) p(θ)</span>, and both factors are easy to write down. The constant of proportionality is <span class="inline-math">∫ p(D | θ) p(θ) dθ</span>, which for anything beyond a textbook example has no closed form. Markov chain Monte Carlo sidesteps it: start anywhere, propose a random step, and accept it with a probability that depends only on the <em>ratio</em> <span class="inline-math">p(θ') / p(θ)</span>, in which the constant cancels. Uphill steps are always taken. Downhill steps are taken sometimes, in proportion to how far down they go. The chain spends time in each region in proportion to its probability, so the visited points are samples from the posterior. The mathematics that guarantees this is a symmetry called <strong>detailed balance</strong>.</p>
-
-            <div class="figure-reference">
-                <img src="figures/metropolis_step.png" alt="Metropolis step visualization">
-                <p class="figure-caption">From the current point, an uphill proposal is always accepted. A downhill proposal is accepted with probability equal to the ratio of densities, here 0.34. Neither decision needs the normalising constant.</p>
-            </div>
-        </section>
-
-        <!-- Section 2 -->
-        <section id="sec2">
-            <h2>2. Two Worked Examples You Can Do by Hand</h2>
-
-            <p>Run <code>python worked_example.py</code> to see every number below printed by the same code that fits the Hubble data.</p>
-
-            <h3>2.1 Three States, Where the Chain is a Matrix</h3>
-
-            <p>Target: three states with probabilities <span class="inline-math">π = (0.2, 0.5, 0.3)</span>. Proposal: from any state, propose a neighbour with probability <span class="inline-math">½</span> each; at the two ends the move that would leave the state space becomes "stay". This keeps the proposal matrix symmetric:</p>
-
-            <div class="equation-block">
-                $$Q = \begin{bmatrix} 0.5 & 0.5 & 0 \\ 0.5 & 0 & 0.5 \\ 0 & 0.5 & 0.5 \end{bmatrix}$$
-            </div>
-
-            <p>The Metropolis acceptance probability for a proposed move <span class="inline-math">i → j</span> is <span class="inline-math">α_{ij} = min(1, π_j / π_i)</span>:</p>
-
-            <div class="equation-block">
-                $$\alpha_{01} = \min\left(1, \tfrac{0.5}{0.2}\right) = 1, \quad
-                \alpha_{10} = \min\left(1, \tfrac{0.2}{0.5}\right) = 0.4, \quad
-                \alpha_{12} = \min\left(1, \tfrac{0.3}{0.5}\right) = 0.6, \quad
-                \alpha_{21} = \min\left(1, \tfrac{0.5}{0.3}\right) = 1$$
-            </div>
-
-            <p>The transition probability is <span class="inline-math">P_{ij} = Q_{ij} α_{ij}</span> for <span class="inline-math">i ≠ j</span>, and each diagonal entry collects whatever was rejected:</p>
-
-            <div class="equation-block">
-                $$P = \begin{bmatrix} 0.5 & 0.5 & 0 \\ 0.2 & 0.5 & 0.3 \\ 0 & 0.5 & 0.5 \end{bmatrix}$$
-            </div>
-
-            <h4>Stationarity</h4>
-            <p>Multiply π by P:</p>
-
-            <div class="equation-block">
-                $$\pi P = \begin{bmatrix} 0.2(0.5) + 0.5(0.2) \\ 0.2(0.5) + 0.5(0.5) + 0.3(0.5) \\ 0.5(0.3) + 0.3(0.5) \end{bmatrix}^{\mathsf T}
-                = \begin{bmatrix} 0.2 & 0.5 & 0.3 \end{bmatrix} = \pi$$
-            </div>
-
-            <h4>Detailed Balance</h4>
-            <p>The probability flow across each link is equal in both directions:</p>
-
-            <div class="equation-block">
-                $$\pi_0 P_{01} = 0.2 \times 0.5 = 0.10 = 0.5 \times 0.2 = \pi_1 P_{10}, \qquad
-                \pi_1 P_{12} = 0.5 \times 0.3 = 0.15 = 0.3 \times 0.5 = \pi_2 P_{21}$$
-            </div>
-
-            <div class="figure-reference">
-                <img src="figures/detailed_balance.png" alt="Detailed balance diagram">
-            </div>
-
-            <h3>2.2 Three Metropolis Steps on a Coin</h3>
-
-            <p>Seven heads in ten flips, prior <span class="inline-math">Beta(2, 2)</span>. The unnormalised log posterior is <span class="inline-math">log p(θ) = 8 log θ + 4 log(1 - θ)</span> (derived in section 3.7). Start at <span class="inline-math">θ = 0.5</span>, propose <span class="inline-math">θ' = θ + 0.1 z</span> with <span class="inline-math">z ~ N(0, 1)</span>, seed 0.</p>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Step</th>
-                        <th>Current θ</th>
-                        <th>Proposal θ'</th>
-                        <th>log p(θ') - log p(θ)</th>
-                        <th>α</th>
-                        <th>Draw u</th>
-                        <th>Decision</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>0.5000</td>
-                        <td>0.5126</td>
-                        <td>-8.2210 + 8.3178 = +0.0968</td>
-                        <td>1.0000</td>
-                        <td>0.2698</td>
-                        <td>accept, uphill</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>0.5126</td>
-                        <td>0.5766</td>
-                        <td>-7.8425 + 8.2210 = +0.3785</td>
-                        <td>1.0000</td>
-                        <td>0.0165</td>
-                        <td>accept, uphill</td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>0.5766</td>
-                        <td>0.5230</td>
-                        <td>-8.1460 + 7.8425 = -0.3035</td>
-                        <td>e^(-0.3035) = 0.7382</td>
-                        <td>0.9128</td>
-                        <td>reject, u ≥ α, stay at 0.5766</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <p>Step 3 is the whole algorithm in one line: the proposal was downhill, it would have been accepted 74% of the time, and this time the coin came up against it.</p>
-        </section>
-
-        <!-- Section 3 -->
-        <section id="sec3">
-            <h2>3. The Derivations</h2>
-
-            <h3>3.1 Bayes' Theorem and the Unnormalised Posterior</h3>
-
-            <p>For parameters θ and data D:</p>
-
-            <div class="equation-block">
-                $$p(\theta \mid D) = \frac{p(D \mid \theta)\, p(\theta)}{p(D)},
-                \qquad
-                p(D) = \int p(D \mid \theta')\, p(\theta')\, d\theta'$$
-            </div>
-
-            <p>The denominator does not depend on θ. Writing <span class="inline-math">p̃(θ) = p(D | θ) p(θ)</span> for the numerator:</p>
-
-            <div class="equation-block">
-                $$\frac{p(\theta' \mid D)}{p(\theta \mid D)} = \frac{\tilde p(\theta')}{\tilde p(\theta)}$$
-            </div>
-
-            <p>Any algorithm that only ever looks at ratios of posterior densities never needs <span class="inline-math">p(D)</span>. Metropolis–Hastings is such an algorithm.</p>
-
-            <h3>3.2 Markov Chains, Stationarity, and Detailed Balance</h3>
-
-            <p>A Markov chain on states <span class="inline-math">i, j, …</span> is defined by transition probabilities <span class="inline-math">P_{ij} = Pr(next = j | now = i)</span>, with <span class="inline-math">Σ_j P_{ij} = 1</span>. A distribution π is <strong>stationary</strong> if running the chain one step from π leaves it unchanged:</p>
-
-            <div class="equation-block">
-                $$\pi P = \pi, \qquad \text{that is} \qquad \sum_i \pi_i P_{ij} = \pi_j \ \text{for every } j$$
-            </div>
-
-            <p>The chain satisfies <strong>detailed balance</strong> with respect to π if:</p>
-
-            <div class="equation-block">
-                $$\pi_i P_{ij} = \pi_j P_{ji} \qquad \text{for every pair } i, j$$
-            </div>
-
-            <div class="theorem">
-                <strong>Theorem.</strong> Detailed balance implies stationarity.
-                <br><br>
-                <strong>Proof.</strong> Sum the detailed-balance identity over <span class="inline-math">i</span>:
-                <div class="equation-block">
-                    $$\sum_i \pi_i P_{ij} = \sum_i \pi_j P_{ji} = \pi_j \sum_i P_{ji} = \pi_j \cdot 1 = \pi_j. \qquad \blacksquare$$
+        <main>
+            <!-- Question and Answer -->
+            <section>
+                <div class="question-box">
+                    <h3>❓ Question</h3>
+                    <p>Bayes' theorem gives the posterior as likelihood times prior, divided by an integral that is usually impossible to compute. How can I draw samples from a distribution I can only evaluate up to a constant, and how do I know the samples are right?</p>
                 </div>
-            </div>
 
-            <p>Detailed balance is the stronger, easier condition: it is a statement about each pair of states separately, and it is what the Metropolis rule is built to satisfy. (Stationarity plus irreducibility and aperiodicity also give convergence to π from any start; those two conditions hold for a Gaussian random walk on a continuous target with positive density.)</p>
-        </section>
+                <div class="answer-box">
+                    <h3>✅ Answer</h3>
+                    <p>Build a random walk whose long-run distribution <em>is</em> the posterior. The Metropolis–Hastings rule does this with one line of algebra, and the reason it works (detailed balance) is a four-line proof. A 40-line sampler recovers a closed-form posterior to within its Monte Carlo error, and fitting Hubble's 1929 data gives the Hubble constant as 453 ± 80 km/s per Mpc, an uncertainty that ordinary least squares alone does not show.</p>
+                </div>
+            </section>
 
-        <!-- Section 4 -->
-        <section id="sec4">
-            <h2>4. Verification</h2>
+            <!-- Table of Contents -->
+            <section>
+                <div class="toc">
+                    <h3>📋 Contents</h3>
+                    <ol>
+                        <li><a href="#sec1">The idea in one paragraph</a></li>
+                        <li><a href="#sec2">Two worked examples you can do by hand</a></li>
+                        <li><a href="#sec3">The derivations</a></li>
+                        <li><a href="#sec4">Verification</a></li>
+                        <li><a href="#sec5">Results</a></li>
+                        <li><a href="#sec6">Numerical lessons learned</a></li>
+                        <li><a href="#sec7">How to run</a></li>
+                        <li><a href="#sec8">Code map</a></li>
+                    </ol>
+                </div>
+            </section>
 
-            <p><code>python -m pytest tests/ -q</code></p>
+            <!-- Section 1 -->
+            <section id="sec1">
+                <h2>1. The Idea in One Paragraph</h2>
 
-            <pre><code>29 passed in 14.56s</code></pre>
+                <p>A posterior distribution <span class="katex"><math><mrow><mi>p</mi><mo>(</mo><mi>θ</mi> <mo>∣</mo> <mi>D</mi><mo>)</mo></mrow></math></span> is proportional to <span class="katex"><math><mrow><mi>p</mi><mo>(</mo><mi>D</mi> <mo>∣</mo> <mi>θ</mi><mo>)</mo> <mi>p</mi><mo>(</mo><mi>θ</mi><mo>)</mo></mrow></math></span>, and both factors are easy to write down. The constant of proportionality is <span class="katex"><math><mrow><mo>∫</mo> <mi>p</mi><mo>(</mo><mi>D</mi> <mo>∣</mo> <mi>θ</mi><mo>)</mo> <mi>p</mi><mo>(</mo><mi>θ</mi><mo>)</mo> <mi>d</mi><mi>θ</mi></mrow></math></span>, which for anything beyond a textbook example has no closed form. Markov chain Monte Carlo sidesteps it: start anywhere, propose a random step, and accept it with a probability that depends only on the <em>ratio</em> <span class="katex"><math><mrow><mi>p</mi><mo>(</mo><mi>θ'</mi><mo>)</mo> <mo>/</mo> <mi>p</mi><mo>(</mo><mi>θ</mi><mo>)</mo></mrow></math></span>, in which the constant cancels. Uphill steps are always taken. Downhill steps are taken sometimes, in proportion to how far down they go. The chain spends time in each region in proportion to its probability, so the visited points are samples from the posterior. The mathematics that guarantees this is a symmetry called <strong>detailed balance</strong>.</p>
 
-            <p>SciPy appears only in the tests, as the reference. The sampler, the diagnostics, and the models are NumPy.</p>
-        </section>
+                <div class="figure-box">
+                    <img src="figures/metropolis_step.png" alt="Metropolis step">
+                    <p class="figure-caption">From the current point, an uphill proposal is always accepted. A downhill proposal is accepted with probability equal to the ratio of densities, here 0.34. Neither decision needs the normalising constant.</p>
+                </div>
+            </section>
 
-        <!-- Section 5 -->
-        <section id="sec5">
-            <h2>5. Results</h2>
+            <!-- Section 2 -->
+            <section id="sec2">
+                <h2>2. Two Worked Examples You Can Do by Hand</h2>
 
-            <h3>5.1 The Coin Problem Against Its Closed Form</h3>
+                <p>Run <code>python worked_example.py</code> to see every number below printed by the same code that fits the Hubble data.</p>
 
-            <p>100,000 steps with step size 0.25, first 2,000 discarded. Acceptance rate 0.504, <span class="inline-math">n_eff = 21,792</span>.</p>
+                <h3>2.1 Three States, Where the Chain is a Matrix</h3>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Quantity</th>
-                        <th>MCMC</th>
-                        <th>Exact Beta(9, 5)</th>
-                        <th>Monte Carlo Standard Error</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Mean</td>
-                        <td>0.6435</td>
-                        <td>0.6429</td>
-                        <td>0.0008</td>
-                    </tr>
-                    <tr>
-                        <td>Variance</td>
-                        <td>0.01522</td>
-                        <td>0.01531</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>5% Quantile</td>
-                        <td>0.4270</td>
-                        <td>0.4274</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>Median</td>
-                        <td>0.6506</td>
-                        <td>0.6498</td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td>95% Quantile</td>
-                        <td>0.8322</td>
-                        <td>0.8343</td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
+                <p>Target: three states with probabilities π = (0.2, 0.5, 0.3). Proposal: from any state, propose a neighbour with probability 1/2 each; at the two ends the move that would leave the state space becomes "stay". This keeps the proposal matrix symmetric:</p>
 
-            <div class="figure-reference">
-                <img src="figures/coin_posterior.png" alt="Coin posterior distribution">
-                <p class="figure-caption">The difference in the mean is 0.0006, under one standard error. The histogram is the sampler; the curve is the theorem.</p>
-            </div>
+                <div class="math-block">
+                    <span class="katex-display"><math display="block"><mrow><mi>Q</mi> <mo>=</mo> <begin-bmatrix> <mn>0.5</mn> <mo>&amp;</mo> <mn>0.5</mn> <mo>&amp;</mo> <mn>0</mn> <mo>\\</mo> <mn>0.5</mn> <mo>&amp;</mo> <mn>0</mn> <mo>&amp;</mo> <mn>0.5</mn> <mo>\\</mo> <mn>0</mn> <mo>&amp;</mo> <mn>0.5</mn> <mo>&amp;</mo> <mn>0.5</mn> </begin-bmatrix></mrow></math></span>
+                </div>
 
-            <h3>5.2 Hubble's 1929 Data</h3>
+                <p>The Metropolis acceptance probability for a proposed move i → j is α<sub>ij</sub> = min(1, π<sub>j</sub>/π<sub>i</sub>):</p>
 
-            <p>Edwin Hubble's original table: 24 nebulae, distance in megaparsecs and recession velocity in km/s (Hubble, <em>PNAS</em> 15(3):168–173, 1929). The slope of velocity against distance is the Hubble constant H₀.</p>
+                <div class="math-block">
+                    <p>α₀₁ = min(1, 0.5/0.2) = 1</p>
+                    <p>α₁₀ = min(1, 0.2/0.5) = 0.4</p>
+                    <p>α₁₂ = min(1, 0.3/0.5) = 0.6</p>
+                    <p>α₂₁ = min(1, 0.5/0.3) = 1</p>
+                </div>
 
-            <p>Four chains, each 5,000 burn-in steps then 20,000 kept, from starting points scattered around the least-squares solution. Total time 1.2 s. Mean acceptance rate 0.236.</p>
+                <p>The transition probability is P<sub>ij</sub> = Q<sub>ij</sub> α<sub>ij</sub> for i ≠ j, and each diagonal entry collects whatever was rejected:</p>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>OLS</th>
-                        <th>Posterior Mean</th>
-                        <th>Posterior SD</th>
-                        <th>95% Interval</th>
-                        <th>R̂</th>
-                        <th>n_eff (of 80,000)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>H₀, km/s per Mpc</td>
-                        <td>454.2</td>
-                        <td>452.7</td>
-                        <td>80.3</td>
-                        <td>[294.5, 614.3]</td>
-                        <td>1.0023</td>
-                        <td>2,927</td>
-                    </tr>
-                    <tr>
-                        <td>Intercept, km/s</td>
-                        <td>-40.8</td>
-                        <td>-39.3</td>
-                        <td>89.0</td>
-                        <td>[-217.8, 136.8]</td>
-                        <td>1.0024</td>
-                        <td>3,077</td>
-                    </tr>
-                    <tr>
-                        <td>log σ</td>
-                        <td></td>
-                        <td>5.48</td>
-                        <td>0.15</td>
-                        <td>[5.2, 5.8]</td>
-                        <td>1.0003</td>
-                        <td>4,974</td>
-                    </tr>
-                    <tr>
-                        <td>σ, km/s</td>
-                        <td>232.9</td>
-                        <td>241.9</td>
-                        <td>37.8</td>
-                        <td>[182, 329]</td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
+                <div class="math-block">
+                    <p><strong>P = [0.5  0.5  0; 0.2  0.5  0.3; 0  0.5  0.5]</strong></p>
+                </div>
 
-            <div class="figure-reference">
-                <img src="figures/trace.png" alt="Trace plots for four chains">
-                <p class="figure-caption">Four chains, four colours, first 3,000 kept steps. They are indistinguishable, which is what R̂ ≈ 1 says numerically.</p>
-            </div>
+                <h4>Stationarity</h4>
+                <p>Multiply π by P and verify that π P = π</p>
 
-            <div class="figure-reference">
-                <img src="figures/posterior_hubble.png" alt="Posterior distributions">
-                <p class="figure-caption">Left and middle: marginal posteriors, with the OLS point estimate as a dashed line and the 95% interval shaded. Right: the joint posterior of slope and intercept, correlation -0.83. A steeper line must cross the axis lower to still pass through the data.</p>
-            </div>
+                <h4>Detailed Balance</h4>
+                <p>The probability flow across each link is equal in both directions:</p>
+                <p>π₀ P₀₁ = 0.2 × 0.5 = 0.10 = 0.5 × 0.2 = π₁ P₁₀</p>
+                <p>π₁ P₁₂ = 0.5 × 0.3 = 0.15 = 0.3 × 0.5 = π₂ P₂₁</p>
 
-            <div class="figure-reference">
-                <img src="figures/autocorrelation.png" alt="Autocorrelation function">
-                <p class="figure-caption">Successive samples are correlated for about 30 steps. The integrated autocorrelation time is 28 for the slope, so 80,000 samples are worth about 2,900 independent ones.</p>
-            </div>
+                <div class="figure-box">
+                    <img src="figures/detailed_balance.png" alt="Detailed balance">
+                </div>
 
-            <h4>What the Numbers Say</h4>
-            <p>The posterior mean agrees with OLS to well within Monte Carlo error (the standard error of the posterior-mean estimate is <span class="inline-math">80.3 / √2927 ≈ 1.5</span>). What OLS does not give directly is the shape of the uncertainty: with 24 points and a residual scatter of about 240 km/s, the data support any slope from roughly 300 to 600. Hubble's value of about 450 km/s per Mpc is roughly seven times the modern value of about 70. The reason is not statistical: his distances, calibrated on stars he believed were Cepheid variables, were systematically too small by a large factor. The posterior faithfully reports the uncertainty in the data it was given; it cannot know the data are biased.</p>
-        </section>
+                <h3>2.2 Three Metropolis Steps on a Coin</h3>
 
-        <!-- Section 6 -->
-        <section id="sec6">
-            <h2>6. Numerical Lessons Learned</h2>
+                <p>Seven heads in ten flips, prior Beta(2, 2). The unnormalised log posterior is log p(θ) = 8 log θ + 4 log(1 - θ). Start at θ = 0.5, propose θ' = θ + 0.1z with z ~ N(0,1), seed 0.</p>
 
-            <h3>Work in Log Space, Always</h3>
-            <p>The log posterior at the least-squares point for the Hubble data is about -142, so the posterior density itself is around <span class="inline-math">e^(-142) ≈ 10^(-62)</span>. That is still representable in double precision, but a data set ten times larger at the same scale would give <span class="inline-math">e^(-1400)</span>, which underflows to exactly 0.0 and turns every acceptance ratio into 0/0. Logarithms turn products into sums and keep every number ordinary. The acceptance test becomes <span class="inline-math">log u < log p̃(θ') - log p̃(θ)</span>, and a proposal outside the support has <span class="inline-math">log p̃ = -∞</span>, so <span class="inline-math">log α = -∞</span> and the comparison correctly rejects it without a special case. The one special case that is needed is the starting point: if θ₀ itself has <span class="inline-math">log p̃ = -∞</span>, the difference is <span class="inline-math">-∞ - (-∞) = NaN</span> and every comparison is False forever. The sampler raises an error instead.</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Step</th>
+                            <th>Current θ</th>
+                            <th>Proposal θ'</th>
+                            <th>log p(θ') - log p(θ)</th>
+                            <th>α</th>
+                            <th>Draw u</th>
+                            <th>Decision</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>0.5000</td>
+                            <td>0.5126</td>
+                            <td>-8.2210 + 8.3178 = +0.0968</td>
+                            <td>1.0000</td>
+                            <td>0.2698</td>
+                            <td>accept, uphill</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>0.5126</td>
+                            <td>0.5766</td>
+                            <td>-7.8425 + 8.2210 = +0.3785</td>
+                            <td>1.0000</td>
+                            <td>0.0165</td>
+                            <td>accept, uphill</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>0.5766</td>
+                            <td>0.5230</td>
+                            <td>-8.1460 + 7.8425 = -0.3035</td>
+                            <td>e<sup>-0.3035</sup> = 0.7382</td>
+                            <td>0.9128</td>
+                            <td>reject, stay at 0.5766</td>
+                        </tr>
+                    </tbody>
+                </table>
 
-            <h3>80,000 Samples Were Worth About 3,000</h3>
-            <p>The integrated autocorrelation time for the slope was 28. A chain that looks long is not: the honest sample size is <span class="inline-math">n / τ</span>, and every reported uncertainty about a posterior mean has to use it. Skipping this step is the most common way to overstate the precision of an MCMC result.</p>
+                <p>Step 3 is the whole algorithm in one line: the proposal was downhill, it would have been accepted 74% of the time, and this time the coin came up against it.</p>
+            </section>
 
-            <h3>The Step Size Has a Sweet Spot, and the Acceptance Rate Finds It</h3>
-            <p>A step of 0.1σ on a standard Gaussian accepted 95% of proposals and went nowhere; a step of 40σ accepted 3% and stood still between rare jumps. The efficient middle is around 2.4σ in one dimension (acceptance near 0.44) and shrinks as <span class="inline-math">2.4 / √d</span> with dimension (acceptance near 0.23). The three-parameter Hubble run landed at 0.236 with step sizes set to about 1.3 posterior standard deviations per coordinate.</p>
+            <!-- Section 3 -->
+            <section id="sec3">
+                <h2>3. The Derivations</h2>
 
-            <div class="figure-reference">
-                <img src="figures/step_size.png" alt="Step size efficiency plot">
-            </div>
+                <h3>3.1 Bayes' Theorem and the Unnormalised Posterior</h3>
 
-            <h3>Correlated Parameters Slow an Isotropic Random Walk</h3>
-            <p>Slope and intercept have posterior correlation -0.83, so the posterior is a thin diagonal ellipse while the proposal is a round blob. Most of each proposal points off the ridge and is wasted, which is why τ ≈ 28 rather than something closer to 10. Two standard fixes, not implemented here: centre the distances so that slope and intercept decorrelate, or use a proposal covariance shaped like the posterior.</p>
+                <p>For parameters θ and data D:</p>
 
-            <h3>Do Not Sum the Autocorrelation to the End</h3>
-            <p>The estimated ρₖ at large lag is noise of size 1/√n that does not shrink with k. Summing it over thousands of lags adds a random walk to the estimate of τ. Sokal's automatic window (sum to the first M with M ≥ 5τₘ) gave τ between 18.4 and 19.7 over five seeds on an AR(1) process of 400,000 steps whose exact value is 19.</p>
+                <div class="math-block">
+                    <p><strong>p(θ | D) = [p(D | θ) p(θ)] / p(D)</strong></p>
+                    <p><strong>p(D) = ∫ p(D | θ') p(θ') dθ'</strong></p>
+                </div>
 
-            <h3>A Flat Prior on log σ is Not a Flat Prior on σ</h3>
-            <p>Changing variables, <span class="inline-math">p(σ) = p(log σ) |d log σ / dσ| = const / σ</span>. This is the scale-invariant prior: it says the same about σ being between 1 and 10 as between 100 and 1,000. Had I wanted a flat prior on σ while still sampling log σ (so the random walk never proposes a negative scale), the log posterior would need the Jacobian term +log σ. Sampling in one parametrisation while thinking in another is an easy way to fit a prior you did not intend.</p>
+                <p>The denominator does not depend on θ. Writing p̃(θ) = p(D | θ) p(θ) for the numerator:</p>
 
-            <h3>Burn-in is Not Optional</h3>
-            <p>Chains were started up to 150 km/s per Mpc from the answer. The first few hundred steps of each chain are a walk toward the high-probability region, not samples from it, and including them biases every estimate toward the starting points. Discarding 5,000 steps was generous; the trace plots show the chains had mixed within a few hundred.</p>
-        </section>
+                <div class="math-block">
+                    <p><strong>p(θ' | D) / p(θ | D) = p̃(θ') / p̃(θ)</strong></p>
+                </div>
 
-        <!-- Section 7 -->
-        <section id="sec7">
-            <h2>7. How to Run</h2>
+                <p>Any algorithm that only ever looks at ratios of posterior densities never needs p(D). Metropolis–Hastings is such an algorithm.</p>
 
-            <pre><code>pip install -r ../requirements.txt
+                <h3>3.2 Markov Chains, Stationarity, and Detailed Balance</h3>
+
+                <p>A Markov chain on states i, j, ... is defined by transition probabilities P<sub>ij</sub> = Pr(next = j | now = i), with Σⱼ P<sub>ij</sub> = 1. A distribution π is <strong>stationary</strong> if running the chain one step from π leaves it unchanged:</p>
+
+                <div class="math-block">
+                    <p><strong>πP = π</strong></p>
+                    <p>that is: Σᵢ πᵢ P<sub>ij</sub> = πⱼ for every j</p>
+                </div>
+
+                <p>The chain satisfies <strong>detailed balance</strong> with respect to π if:</p>
+
+                <div class="math-block">
+                    <p><strong>πᵢ P<sub>ij</sub> = πⱼ P<sub>ji</sub> for every pair i, j</strong></p>
+                </div>
+
+                <div class="theorem-box">
+                    <p><strong>Theorem:</strong> Detailed balance implies stationarity.</p>
+                    <p><strong>Proof:</strong> Sum the detailed-balance identity over i:</p>
+                    <div class="math-block">
+                        <p>Σᵢ πᵢ P<sub>ij</sub> = Σᵢ πⱼ P<sub>ji</sub> = πⱼ Σᵢ P<sub>ji</sub> = πⱼ · 1 = πⱼ ■</p>
+                    </div>
+                </div>
+
+                <p>Detailed balance is the stronger, easier condition: it is a statement about each pair of states separately, and it is what the Metropolis rule is built to satisfy.</p>
+            </section>
+
+            <!-- Section 4 -->
+            <section id="sec4">
+                <h2>4. Verification</h2>
+
+                <pre><code>$ python -m pytest tests/ -q
+29 passed in 14.56s</code></pre>
+
+                <p>SciPy appears only in the tests, as the reference. The sampler, the diagnostics, and the models are NumPy.</p>
+            </section>
+
+            <!-- Section 5 -->
+            <section id="sec5">
+                <h2>5. Results</h2>
+
+                <h3>5.1 The Coin Problem Against Its Closed Form</h3>
+
+                <p>100,000 steps with step size 0.25, first 2,000 discarded. Acceptance rate 0.504, n<sub>eff</sub> = 21,792.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Quantity</th>
+                            <th>MCMC</th>
+                            <th>Exact Beta(9, 5)</th>
+                            <th>Monte Carlo Standard Error</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Mean</td>
+                            <td>0.6435</td>
+                            <td>0.6429</td>
+                            <td>0.0008</td>
+                        </tr>
+                        <tr>
+                            <td>Variance</td>
+                            <td>0.01522</td>
+                            <td>0.01531</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>5% Quantile</td>
+                            <td>0.4270</td>
+                            <td>0.4274</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Median</td>
+                            <td>0.6506</td>
+                            <td>0.6498</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>95% Quantile</td>
+                            <td>0.8322</td>
+                            <td>0.8343</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="figure-box">
+                    <img src="figures/coin_posterior.png" alt="Coin posterior">
+                    <p class="figure-caption">The difference in the mean is 0.0006, under one standard error. The histogram is the sampler; the curve is the theorem.</p>
+                </div>
+
+                <h3>5.2 Hubble's 1929 Data</h3>
+
+                <p>Edwin Hubble's original table: 24 nebulae, distance in megaparsecs and recession velocity in km/s (Hubble, <em>PNAS</em> 15(3):168–173, 1929). The slope of velocity against distance is the Hubble constant H₀.</p>
+
+                <p>Four chains, each 5,000 burn-in steps then 20,000 kept, from starting points scattered around the least-squares solution. Total time 1.2 s. Mean acceptance rate 0.236.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>OLS</th>
+                            <th>Posterior Mean</th>
+                            <th>Posterior SD</th>
+                            <th>95% Interval</th>
+                            <th>R̂</th>
+                            <th>n<sub>eff</sub> (of 80,000)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>H₀, km/s per Mpc</td>
+                            <td>454.2</td>
+                            <td>452.7</td>
+                            <td>80.3</td>
+                            <td>[294.5, 614.3]</td>
+                            <td>1.0023</td>
+                            <td>2,927</td>
+                        </tr>
+                        <tr>
+                            <td>Intercept, km/s</td>
+                            <td>-40.8</td>
+                            <td>-39.3</td>
+                            <td>89.0</td>
+                            <td>[-217.8, 136.8]</td>
+                            <td>1.0024</td>
+                            <td>3,077</td>
+                        </tr>
+                        <tr>
+                            <td>log σ</td>
+                            <td></td>
+                            <td>5.48</td>
+                            <td>0.15</td>
+                            <td>[5.2, 5.8]</td>
+                            <td>1.0003</td>
+                            <td>4,974</td>
+                        </tr>
+                        <tr>
+                            <td>σ, km/s</td>
+                            <td>232.9</td>
+                            <td>241.9</td>
+                            <td>37.8</td>
+                            <td>[182, 329]</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="figure-box">
+                    <img src="figures/trace.png" alt="Trace plots">
+                    <p class="figure-caption">Four chains, four colours, first 3,000 kept steps. They are indistinguishable, which is what R̂ ≈ 1 says numerically.</p>
+                </div>
+
+                <div class="figure-box">
+                    <img src="figures/posterior_hubble.png" alt="Posterior distributions">
+                    <p class="figure-caption">Left and middle: marginal posteriors, with the OLS point estimate as a dashed line and the 95% interval shaded. Right: the joint posterior of slope and intercept, correlation -0.83.</p>
+                </div>
+
+                <div class="figure-box">
+                    <img src="figures/autocorrelation.png" alt="Autocorrelation">
+                    <p class="figure-caption">Successive samples are correlated for about 30 steps. The integrated autocorrelation time is 28 for the slope, so 80,000 samples are worth about 2,900 independent ones.</p>
+                </div>
+            </section>
+
+            <!-- Section 6 -->
+            <section id="sec6">
+                <h2>6. Numerical Lessons Learned</h2>
+
+                <h3>Work in Log Space, Always</h3>
+                <p>The log posterior at the least-squares point for the Hubble data is about -142, so the posterior density itself is around e<sup>-142</sup> ≈ 10<sup>-62</sup>. That is still representable in double precision, but a data set ten times larger would give e<sup>-1400</sup>, which underflows. Logarithms turn products into sums and keep every number ordinary.</p>
+
+                <h3>80,000 Samples Were Worth About 3,000</h3>
+                <p>The integrated autocorrelation time for the slope was 28. A chain that looks long is not: the honest sample size is n / τ, and every reported uncertainty about a posterior mean has to use it. Skipping this step is the most common way to overstate the precision of an MCMC result.</p>
+
+                <h3>The Step Size Has a Sweet Spot</h3>
+                <p>A step of 0.1σ accepted 95% of proposals and went nowhere; a step of 40σ accepted 3% and stood still. The efficient middle is around 2.4σ in one dimension (acceptance near 0.44) and shrinks as 2.4/√d with dimension (acceptance near 0.23).</p>
+
+                <div class="figure-box">
+                    <img src="figures/step_size.png" alt="Step size efficiency">
+                </div>
+
+                <h3>Additional Lessons</h3>
+                <ul>
+                    <li><strong>Correlated Parameters:</strong> Slope and intercept have posterior correlation -0.83, creating a thin diagonal ellipse that slows isotropic random walks.</li>
+                    <li><strong>Autocorrelation Windowing:</strong> Do not sum autocorrelation to the end; use Sokal's automatic window.</li>
+                    <li><strong>Prior Parametrisation:</strong> A flat prior on log σ is not a flat prior on σ. Consider the Jacobian carefully.</li>
+                    <li><strong>Burn-in:</strong> Chains started far from the answer require burn-in. Discarding the first few hundred steps was essential.</li>
+                </ul>
+            </section>
+
+            <!-- Section 7 -->
+            <section id="sec7">
+                <h2>7. How to Run</h2>
+
+                <pre><code>pip install -r ../requirements.txt
 
 python -m pytest tests/ -v      # 29 tests, about 15 s
 
-python worked_example.py        # the three-state chain and three coin steps
+python worked_example.py        # three-state chain and coin steps
 
-python run.py                   # coin check + Hubble regression, about 5 s
+python run.py                   # coin check + Hubble regression
 
-python make_figures.py          # the conceptual diagrams</code></pre>
+python make_figures.py          # conceptual diagrams</code></pre>
 
-            <p>SciPy is needed only for the tests.</p>
-        </section>
+                <p>SciPy is needed only for the tests.</p>
+            </section>
 
-        <!-- Section 8 -->
-        <section id="sec8">
-            <h2>8. Code Map</h2>
+            <!-- Section 8 -->
+            <section id="sec8">
+                <h2>8. Code Map</h2>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>File</th>
-                        <th>Contents</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><code>mcmc/metropolis.py</code></td>
-                        <td><code>metropolis_step</code> (one proposal, with every intermediate quantity returned) and <code>metropolis_hastings</code> (the loop). Frozen <code>Chain</code> and <code>StepResult</code> dataclasses.</td>
-                    </tr>
-                    <tr>
-                        <td><code>mcmc/diagnostics.py</code></td>
-                        <td><code>autocorrelation</code>, <code>integrated_autocorrelation_time</code> (Sokal window), <code>effective_sample_size</code>, <code>gelman_rubin_rhat</code>.</td>
-                    </tr>
-                    <tr>
-                        <td><code>mcmc/models.py</code></td>
-                        <td>Log densities: <code>log_gaussian</code>, <code>log_beta_binomial_posterior</code>, <code>log_linear_regression_posterior</code> with <code>RegressionPriors</code>.</td>
-                    </tr>
-                    <tr>
-                        <td><code>mcmc/discrete.py</code></td>
-                        <td>Metropolis as a matrix on a finite state space: <code>neighbour_proposal</code>, <code>metropolis_transition_matrix</code>, residuals for detailed balance and stationarity, <code>simulate_discrete_chain</code>.</td>
-                    </tr>
-                    <tr>
-                        <td><code>data/hubble_1929.csv</code></td>
-                        <td>Hubble's 24 nebulae: distance (Mpc), velocity (km/s).</td>
-                    </tr>
-                    <tr>
-                        <td><code>tests/</code></td>
-                        <td>29 tests, one theorem or closed form each (section 4).</td>
-                    </tr>
-                    <tr>
-                        <td><code>worked_example.py</code></td>
-                        <td>Section 2, printed.</td>
-                    </tr>
-                    <tr>
-                        <td><code>run.py</code></td>
-                        <td>Section 5: the coin check and the Hubble regression, with figures.</td>
-                    </tr>
-                    <tr>
-                        <td><code>make_figures.py</code></td>
-                        <td>The conceptual figures in sections 1, 2 and 6.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-    </main>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Contents</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>mcmc/metropolis.py</code></td>
+                            <td><code>metropolis_step</code> and <code>metropolis_hastings</code>. Frozen <code>Chain</code> and <code>StepResult</code> dataclasses.</td>
+                        </tr>
+                        <tr>
+                            <td><code>mcmc/diagnostics.py</code></td>
+                            <td><code>autocorrelation</code>, <code>integrated_autocorrelation_time</code>, <code>effective_sample_size</code>, <code>gelman_rubin_rhat</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><code>mcmc/models.py</code></td>
+                            <td>Log densities: <code>log_gaussian</code>, <code>log_beta_binomial_posterior</code>, <code>log_linear_regression_posterior</code>.</td>
+                        </tr>
+                        <tr>
+                            <td><code>mcmc/discrete.py</code></td>
+                            <td>Metropolis on finite state space with detailed balance checks.</td>
+                        </tr>
+                        <tr>
+                            <td><code>data/hubble_1929.csv</code></td>
+                            <td>Hubble's 24 nebulae: distance (Mpc), velocity (km/s).</td>
+                        </tr>
+                        <tr>
+                            <td><code>tests/</code></td>
+                            <td>29 tests, one theorem or closed form each.</td>
+                        </tr>
+                        <tr>
+                            <td><code>worked_example.py</code></td>
+                            <td>Section 2 examples, printed output.</td>
+                        </tr>
+                        <tr>
+                            <td><code>run.py</code></td>
+                            <td>Section 5: coin check and Hubble regression.</td>
+                        </tr>
+                        <tr>
+                            <td><code>make_figures.py</code></td>
+                            <td>Conceptual figures for sections 1, 2, and 6.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
 
-    <footer>
-        <p>📚 Markov Chain Monte Carlo From Scratch | A comprehensive guide to sampling from complex distributions</p>
-        <p style="font-size: 0.9em; margin-top: 10px;">Created with ❤️ for understanding Bayesian inference</p>
-    </footer>
+        <footer>
+            <p>📚 Markov Chain Monte Carlo From Scratch | A comprehensive guide to Bayesian inference</p>
+            <p style="font-size: 0.9em; opacity: 0.8;">Created for clear, reproducible understanding of MCMC methods</p>
+        </footer>
+    </div>
 
-    <a href="#" class="back-to-top" onclick="scrollToTop(event)">↑ Top</a>
+    <a href="#" class="back-to-top" onclick="scrollToTop(event)">↑</a>
 
     <script>
-        // Back to top button functionality
+        // Back to top button
         window.addEventListener('scroll', function() {
-            const backToTop = document.querySelector('.back-to-top');
+            const btn = document.querySelector('.back-to-top');
             if (window.pageYOffset > 300) {
-                backToTop.classList.add('show');
+                btn.classList.add('show');
             } else {
-                backToTop.classList.remove('show');
+                btn.classList.remove('show');
             }
         });
 
@@ -845,17 +824,6 @@ python make_figures.py          # the conceptual diagrams</code></pre>
             e.preventDefault();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
-        // Configure MathJax for better rendering
-        window.MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']]
-            },
-            svg: {
-                fontCache: 'global'
-            }
-        };
     </script>
 </body>
 </html>
