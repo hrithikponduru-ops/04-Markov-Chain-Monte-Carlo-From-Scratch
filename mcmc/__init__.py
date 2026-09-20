@@ -1,0 +1,1 @@
+"""Markov chain Monte Carlo from scratch: Metropolis-Hastings, diagnostics, models."""
