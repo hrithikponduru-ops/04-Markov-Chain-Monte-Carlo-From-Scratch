@@ -12,7 +12,7 @@
 ```bash
    pip install -r requirements.txt
 ```
-5. Run training:
+5. Run:
 ```bash
    python run.py
 ```
